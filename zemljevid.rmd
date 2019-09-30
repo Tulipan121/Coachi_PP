@@ -1,0 +1,66 @@
+---
+title: "Coachi_PP"
+author: "Blaž Zupančič"
+date: "30 9 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(dplyr)
+library(leaflet)
+library(googlesheets)
+library(stringr)
+```
+
+## Coachi PP
+	
+Coach PP je nova vloga v taborništvu, ki jo prinaša novi program za popotnike in popotnice. Glavna naloga coacha PP je, da te podpira pri doseganju izzivov, ki si si jih sam zastavil. Dela ne bo opravljal namesto tebe, lahko pa ti je v veliko oporo s pomočjo spremljanja tvojega napredka, zastavljanja pravih vprašanj, podpore pri kovanju načrtov in na koncu seveda tudi s priznanjem za dosežen napredek. Več si preberi v dokumentu [program PP](http://tapos.taborniki.si/program/pp-program/).
+
+Na spodnjem zemljevidu in na opisih pod njim si lahko prebereš več o tabornikih, ki so se udeležili usposabljanja za coache PP. Lahko si izbereš kogarkoli izmed njih in mu pošlješ sporočilo. Izbrani coach PP ti bo nato odgovoril in skupaj se bosta dogovorila, kako bo izgledalo vajino sodelovanje. Predvidoma bosta na začetku potrebovala nekaj več časa, kasneje pa se bosta verjetno srečevala približno enkrat mesečno.
+
+```{r opisi, include=FALSE}
+setwd("D:/R/GitHub/Coachi_PP")
+
+preberi_tabelo <- gs_url("https://docs.google.com/spreadsheets/d/18DC8pUJYmKz1WwkJz56v2hVxdHHaqdgXSfESUbjvqPI/edit#gid=434710997")
+
+data_1 <- gs_read(gs_title("Opisi_coachev_PP"), 1)
+
+data_2 <- str_split(data_1$`Koordinate, kjer bi bil coach (v obliki: 46.370208, 15.086965, kopirano iz google zemljevidov - desni klik na lokacijo, potem pa 'Kaj je tukaj?')`, ",") %>%
+      unlist() %>%
+      str_remove_all("[[:blank:]]") %>%
+      as.character() %>%
+      as.numeric() %>%
+      matrix(nrow = nrow(data_1), ncol = 2, byrow = TRUE) %>%
+      data.frame()
+colnames(data_2) <- c("latitude", "longitude")   
+
+```
+
+```{r zemljevid, include=TRUE, echo=FALSE}
+data_3 <- data_2 %>% 
+      leaflet(width = 1000, height = 650) %>%
+      addTiles() %>%
+      addAwesomeMarkers(lng = as.numeric(data_2$longitude), lat = as.numeric(data_2$latitude),
+                 clusterOptions = markerClusterOptions(),
+                 popupOptions = popupOptions(maxWidth = 600, minWidth = 450,  closeOnClick = TRUE),
+                 popup = paste(
+                       "<div class='leaflet-popup-content' style='width: 451px;'><div><div>
+<img src='",
+data_1$Slika,
+"' style='height: 200px; border-left: white 25px solid' align='right' >
+<h2>",
+data_1$Ime, data_1$Priimek,
+"</h2><br>
+Interesi in hobiji:<b>",
+data_1$`Interesi, hobiji`,
+"</b><br><br>
+Kako bi se opisal s tremi besedami: <b>",
+data_1$`Kako bi se opisal s 3 besedami?`,
+"</b><br><br>
+<b><a href=",
+data_1$Povezava,
+" target='_blank'>Povezava</b><br><br></div>"))
+
+data_3
+```
